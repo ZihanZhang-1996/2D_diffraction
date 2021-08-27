@@ -30,7 +30,12 @@ def read_poscar(address):
             x=x.lstrip()
             x=x.rstrip()
             x=x.split()
-            x=np.array(x)
+            iii=0
+            pp=np.zeros(len(x))
+            for p in x:
+                pp[iii]=AFF.atom_dict[p]
+                iii+=1
+            x=np.array(pp)
             z=x.astype(int)
         if ind==7:
             x=x.lstrip()
