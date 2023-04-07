@@ -1,5 +1,8 @@
 import numpy as np
 import AFF
+import matplotlib.pyplot as plt
+import scipy.ndimage as ndimage
+import matplotlib.cm as cm
 def read_poscar(address):
     f=open(address)
     ind=0
@@ -125,7 +128,7 @@ def Bragg_peaks(a1,a2,a3,positions,thetax,thetay,hkl_dimension):
     F=np.abs(F)
     F=pow(F,2)
     Bpeaks=np.concatenate((G1,G2,G3,F), axis=0)
-    return Bpeaks
+    return Bpeaks,pow(G1*G1+G2*G2,0.5),pow(G3*G3,0.5),F
 
 def diffuse(a1,a2,a3,positions,thetax,thetay,hkl_dimension,shift):
     # Lattice parameters M matrix in cartesian coordinate(angstrom)
@@ -291,3 +294,59 @@ def intensity_diffuse(gridx,gridz,Bpeaks,sigma1,sigma2,sigma3,hkl_dimension):
             Intensity=I1*I2*I3*F
             I0[x,y]=np.sum(Intensity)
     return I0
+
+def GIWAXS_peak_finder(data,neighborhood_size,threshold,print_peak_position,qzmax,qxymax,qzmin,colorbar):
+    data_max = ndimage.maximum_filter(data, neighborhood_size)
+    maxima = (data == data_max)
+    data_min = ndimage.minimum_filter(data, neighborhood_size)
+    diff1 = ((data_max - data_min) > threshold)
+    maxima[diff1 == 0] = 0
+    resolutionz,resolutionx=data.shape
+    labeled, num_objects = ndimage.label(maxima)
+    slices = ndimage.find_objects(labeled)
+    x, y = [], []
+    for dy,dx in slices:
+        x_center = (dx.start + dx.stop - 1)/2
+        y_center = (dy.start + dy.stop - 1)/2
+
+        y_center=resolutionz-y_center
+        y_center=qzmax-y_center/resolutionz*(qzmax-qzmin)
+        x_center=-qxymax+x_center/resolutionx*qxymax*2
+
+        if abs(x_center)>0.2 and abs(y_center)>0.2:
+            x.append(x_center)
+            y.append(y_center)
+
+
+
+    x=np.array(x)
+    y=np.array(y)
+
+    fig,ax=plt.subplots(figsize=(7,7))
+
+    plt.imshow(data, interpolation='nearest', cmap=cm.jet,
+                   origin='lower', extent=[-qxymax, qxymax, 0, qzmax],
+                   vmax=colorbar*data.max(), vmin=data.min())
+
+    plt.xlabel('q$_{xy}$(1/A)',fontsize=16)
+    plt.ylabel('q$_{z}$(1/A)',fontsize=16)
+    plt.plot(x,y, 'go')
+
+    # print('peak position')
+    if print_peak_position==True:
+        exp_peak_postions=np.zeros([x.size,3])
+        counter=0
+        for i in x:
+            exp_peak_postions[counter,0]=i
+            exp_peak_postions[counter,1]=y[counter]
+            exp_peak_postions[counter,2]=np.sqrt(i*i+y[counter]*y[counter])
+            counter=counter+1
+
+        column_to_sort_by = 2
+        sorted_data = sorted(exp_peak_postions, key=lambda row: row[column_to_sort_by])
+
+        counter=0
+        for i in exp_peak_postions:
+            print("[","%.3f" % sorted_data[counter][0],",","%.3f" % sorted_data[counter][1],"]",
+                  "q=","%.3f" % sorted_data[counter][2])
+            counter=counter+1
