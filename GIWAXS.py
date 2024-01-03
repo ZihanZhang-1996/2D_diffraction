@@ -3,7 +3,6 @@ import pandas as pd
 import math
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import scipy.ndimage as ndimage
 class GIWAXS:
     def __init__(self,data,qxy,qz,name,dirr):
         self.name=name
@@ -17,18 +16,13 @@ class GIWAXS:
         self.yp,self.xp=self.data.shape
         self.dirr=dirr
         
-    def switch_qxy(self):
-        self.qxymax,self.qxymin = -self.qxymin,-self.qxymax
-        
-    def switch_qz(self):
-        self.qzmax,self.qzmin = -self.qzmin,-self.qzmax
-        
     def rename(self,name):
         self.name=name
         
     def imshow(self):
         lb = np.nanpercentile(self.data, 10)
         ub = np.nanpercentile(self.data, 99.9)
+        print('yes')
         fig,ax=plt.subplots(figsize=(7,7))
         ax.imshow(self.data, interpolation='nearest', cmap=cm.jet,
                origin='lower', extent=[self.qxymin, self.qxymax, self.qzmin, self.qzmax],
@@ -82,8 +76,8 @@ class GIWAXS:
         return np.linspace(self.qzint_qzmin,self.qzint_qzmax,self.qzint_I.shape[0]),self.qzint_I
         
     def qzint_imshow(self):
-        lb = np.nanpercentile(self.data, 10)
-        ub = np.nanpercentile(self.data, 99.9)
+        lb = np.nanpercentile(self.qzint_data, 10)
+        ub = np.nanpercentile(self.qzint_data, 99)
         fig,ax=plt.subplots(3,1,figsize=(7,21))
         ax[0].imshow(self.qzint_mask, interpolation='nearest', cmap=cm.jet,
                origin='lower', extent=[self.cut_qxymin, self.cut_qxymax, self.cut_qzmin, self.cut_qzmax],
@@ -214,61 +208,3 @@ class GIWAXS:
             dave=np.transpose(dave)
             np.savetxt(name1+'.txt',dave)
         return self.aglint_q,self.aglint_I
-    
-    def peak_finder(self,neighborhood_size,threshold,print_peak_position):
-        peak_finder_data=self.cut_data+1+np.min(self.cut_data)
-        
-        data_max = ndimage.maximum_filter(peak_finder_data, neighborhood_size)
-        maxima = (peak_finder_data == data_max)
-        data_min = ndimage.minimum_filter(peak_finder_data, neighborhood_size)
-        diff1 = ((data_max - data_min) > threshold)
-        maxima[diff1 == 0] = 0
-        resolutionz,resolutionx=peak_finder_data.shape
-        labeled, num_objects = ndimage.label(maxima)
-        slices = ndimage.find_objects(labeled)
-        x, y = [], []
-        for dy,dx in slices:
-            x_center = (dx.start + dx.stop - 1)/2
-            y_center = (dy.start + dy.stop - 1)/2
-
-            y_center=resolutionz-y_center
-            y_center=self.cut_qzmax-y_center/resolutionz*(self.cut_qzmax-self.cut_qzmin)
-            x_center=self.cut_qxymin+x_center/resolutionx*(self.cut_qxymax-self.cut_qxymin)
-
-            if abs(x_center)>0.2 and abs(y_center)>0.2:
-                x.append(x_center)
-                y.append(y_center)
-
-
-
-        x=np.array(x)
-        y=np.array(y)
-
-        fig,ax=plt.subplots(figsize=(7,7))
-        
-        lb = np.nanpercentile(peak_finder_data, 10)
-        ub = np.nanpercentile(peak_finder_data, 99)
-        plt.imshow(peak_finder_data, interpolation='nearest', cmap=cm.jet,
-                       origin='lower', extent=[self.cut_qxymin, self.cut_qxymax, self.cut_qzmin, self.cut_qzmax],
-                       vmax=ub, vmin=lb)
-
-        plt.xlabel('q$_{xy}$(1/A)',fontsize=16)
-        plt.ylabel('q$_{z}$(1/A)',fontsize=16)
-        plt.plot(x,y, 'go')
-        if print_peak_position==True:
-            exp_peak_postions=np.zeros([x.size,3])
-            counter=0
-            for i in x:
-                exp_peak_postions[counter,0]=i
-                exp_peak_postions[counter,1]=y[counter]
-                exp_peak_postions[counter,2]=np.sqrt(i*i+y[counter]*y[counter])
-                counter=counter+1
-
-            column_to_sort_by = 2
-            sorted_data = sorted(exp_peak_postions, key=lambda row: row[column_to_sort_by])
-
-            counter=0
-            for i in exp_peak_postions:
-                print("[","%.3f" % sorted_data[counter][0],",","%.3f" % sorted_data[counter][1],"]",
-                      "q=","%.3f" % sorted_data[counter][2])
-                counter=counter+1
