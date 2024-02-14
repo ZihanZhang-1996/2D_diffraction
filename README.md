@@ -1,4 +1,4 @@
 ## ASE version 
-You can use .cif directly with ASE package.
+Install ASE package to use .cif directly
 
 https://wiki.fysik.dtu.dk/ase/
