@@ -1,0 +1,61 @@
+# --- CMake build folders ---
+/build/
+/cmake-build-*/
+build/
+
+# --- Compiled object files ---
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.libs
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# --- Executables ---
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# --- Debug / profiling ---
+*.dSYM/
+*.stackdump
+*.core
+*.gprof
+*.gcda
+*.gcno
+*.gcov
+
+# --- IDE files ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Python cache (if you use scripts) ---
+__pycache__/
+*.py[cod]
+
+# --- Data / output ---
+/output/
+/*.csv
+/*.vtk
+# /*.txt
+
+# macOS system files
+.DS_Store
+
+# Documentation files
+/docs/
+
+#  Old versions
+/PDE_1D/
+/PDE_2D/
